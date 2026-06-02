@@ -6,6 +6,7 @@ params.sample_info			= "${projectDir}/pipeline_files/manifest_files/test_sample_
 params.bed_file             = "${projectDir}/pipeline_files/gene_lists/austin_panel_targets.bed"
 params.ref_fasta			= '/stornext/Bioinf/data/lab_bahlo/projects/epilepsy/hg38/reference/fasta/Homo_sapiens_assembly38.fasta'
 params.spliceai_distance    = 500
+params.genie_lookup 		= "${projectDir}/pipeline_files/vcfanno_files/genie_lookup.tsv"
 
 // Duplex/simplex read support thresholds for filtering somatic variants.
 //   A variant passes if it meets ANY of the three conditions:
@@ -190,7 +191,7 @@ process ClinVar {
 	tag "${ID} ${GROUP}"
 
     container 'quay.io/biocontainers/vcfanno:0.2.6--0'	
-
+	time = '12h'
 	input:
 		tuple path(vcf), path(vcf_index)
 		tuple val(GROUP), val(ID), val(VCF), val(BAM)
@@ -209,7 +210,7 @@ process Cosmic {
 	tag "${ID} ${GROUP}"
 
     container 'quay.io/biocontainers/vcfanno:0.2.6--0'		
-
+	time = '12h'
 	input:
 		path(vcf)
 		tuple val(GROUP), val(ID), val(VCF), val(BAM)
@@ -223,12 +224,27 @@ process Cosmic {
 	vcfanno  !{params.cosmic_toml} !{vcf} > !{ID}_!{GROUP}.cosmic.vcf
 	'''
 }
-
+process Genie {
+	tag "${ID} ${GROUP}"
+	container 'quay.io/biocontainers/python:3.10'
+	time = '4h'
+	input:
+		path(vcf)
+		tuple val(GROUP), val(ID), val(VCF), val(BAM)
+	output:
+		path("*.genie.vcf")
+		tuple val(GROUP), val(ID), val(VCF), val(BAM)
+	shell:
+	'''
+	python3 !{projectDir}/pipeline_files/scripts/annotate_genie.py \
+		!{vcf} !{params.genie_lookup} !{ID}_!{GROUP}.genie.vcf
+	'''
+}
 process SpliceAI_Run {
 	tag "${ID} ${GROUP}"	
 
-	container 'community.wave.seqera.io/library/python_pip_keras_setuptools_pruned:1c71801b2a7b49db'
-
+	// container 'community.wave.seqera.io/library/python_pip_keras_setuptools_pruned:1c71801b2a7b49db'
+	container 'quay.io/biocontainers/spliceai:1.3.1--pyh864c0ab_1'
 	cpus = 1
 	memory = { 16 * task.attempt + ' GB' }
 	time = { 2 * task.attempt + ' h'}
@@ -283,7 +299,7 @@ process Filter_Variants_Vembrane {
     container 'quay.io/biocontainers/vembrane:2.5.0--pyhdfd78af_0'
     
     publishDir "filtered_variants", mode: 'copy'
-    
+    time = '12h'
     input:
     path(vcf)
     tuple val(GROUP), val(ID), val(VCF), val(BAM)
@@ -310,6 +326,8 @@ EXPR
     vembrane filter \
 		--annotation-key CSQ \
         --overwrite-number-info "COSMIC_Sample_Count=." \
+		--overwrite-number-info "COSMIC_Targeted_Sample_Count=." \
+		--overwrite-number-info "GENIE_Sample_Count=." \
         --output ${ID}_candidate_variants.vcf \
         "\$(cat vembrane_expr.txt)" \
         ${vcf}
@@ -400,7 +418,7 @@ process Generate_Report {
 	publishDir "filtered_variants", mode: "copy"
 
 	memory = '32 GB'
-
+	time = '12h'
 	container 'community.wave.seqera.io/library/r-dplyr_r-openxlsx_zip:04bb05dca48c0236'
 
 	input:
@@ -418,7 +436,7 @@ process Generate_Report {
 process Check_Coverage {
 	cpus = 2
 	memory = '4 GB'
-
+	time = '12h'
 	input: tuple val(GROUP), val(ID), val(VCF), val(BAM)
 
 	output: tuple val(GROUP), val(ID), val(VCF), val(BAM), emit: meta
@@ -434,7 +452,9 @@ process Check_Coverage {
 
 process Plot_Depths {
 	cpus = 2
-	memory = { 10 * task.attempt + ' GB' }
+	memory = { 64 * task.attempt + ' GB' }
+    	time = '12h'
+	container 'community.wave.seqera.io/library/bioconductor-variantannotation_r-tidyverse:bc8ea2e5386b79c1'
 
 	publishDir "coverage_data", mode: 'copy'
 
@@ -491,6 +511,7 @@ ${summary}"""
 	| Process_CADD
 	| ClinVar
 	| Cosmic
+	| Genie
 	| SpliceAI_Run
 	| Process_SpliceAI
 	| Filter_Variants_Vembrane
