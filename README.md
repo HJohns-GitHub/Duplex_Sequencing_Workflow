@@ -1,7 +1,9 @@
 # Austin Pathology High‑Depth Duplex Panel Sequencing
 
 ## Overview
-
+Note: Forked from Josh Reid's duplex sequencing repository. Changes involve:
+- Handling of both COSMIC WGS panel and targeted panel datasets
+- Implementation of GENIE annotation (from pre-collapsed GENIE annotation file)
 This repository describes the sequencing workflow and downstream processing 
 for the **Austin Pathology high‑depth duplex panel**. 
 Data is received from Austin Pathology and stored in the Mediaflux project 
