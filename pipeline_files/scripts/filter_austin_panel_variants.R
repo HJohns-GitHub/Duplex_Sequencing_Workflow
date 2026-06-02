@@ -117,6 +117,8 @@ if (n_variants == 0) {
     nhomalt_gnomad_genomes_4.0 = numeric(0),
     nhomalt_gnomad_total_4.0 = numeric(0),
     COSMIC_Sample_Count = numeric(0),
+    COSMIC_Targeted_Sample_Count = numeric(0),
+    GENIE_Sample_Count = numeric(0),
     REF_AD = numeric(0),
     ALT_AD = numeric(0),
     VAF = numeric(0),
@@ -324,6 +326,8 @@ vcf_info$nhomalt_gnomad_total_4.0 <- as.numeric(vcf_info$nhomalt_gnomad_exomes_4
 
 #COSMIC
 vcf_info$COSMIC_Sample_Count <- as.numeric(vcf_info$COSMIC_Sample_Count)
+vcf_info$COSMIC_Targeted_Sample_Count <- as.numeric(vcf_info$COSMIC_Targeted_Sample_Count)
+vcf_info$GENIE_Sample_Count <- as.numeric(vcf_info$GENIE_Sample_Count)
 
 # Convert all SpliceAI columns to numeric
 vcf_info$SpliceAI_DS_AG <- as.numeric(vcf_info$SpliceAI_DS_AG)
@@ -375,7 +379,7 @@ vcf_info <- vcf_info %>%
     PolyPhen, SpliceAI_DS_AG, SpliceAI_DS_AL, SpliceAI_DS_DG, SpliceAI_DS_DL, SpliceAI_Max,
     ClinVarSIG, ClinVarSIGCONF, ClinVarGene, ClinVarDN, 
     AC_gnomad_exomes_4.0, AC_gnomad_genomes_4.0, AC_gnomad_total_4.0, 
-    nhomalt_gnomad_exomes_4.0, nhomalt_gnomad_genomes_4.0, nhomalt_gnomad_total_4.0, COSMIC_Sample_Count, 
+    nhomalt_gnomad_exomes_4.0, nhomalt_gnomad_genomes_4.0, nhomalt_gnomad_total_4.0,COSMIC_Sample_Count, COSMIC_Targeted_Sample_Count, GENIE_Sample_Count,
     REF_AD, ALT_AD, VAF, BAM_REF, BAM_ALT, BAM_OTHER, DUPLEX_REF, DUPLEX_ALT, DUPLEX_OTHER, 
     SIMPLEX_REF, SIMPLEX_ALT, SIMPLEX_OTHER, Gene.1, Pathway, Inheritance, Phenotype, Franklin_URL
   )
